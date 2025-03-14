@@ -1,0 +1,57 @@
+-- 1. Data Quality Checks
+-- Check for missing values
+SELECT 'CATEGORY_1' AS ColumnName, COUNT(*) AS MissingCount FROM USER_TAKEHOME WHERE CATEGORY_1 IS NULL
+UNION ALL
+SELECT 'CATEGORY_2', COUNT(*) FROM USER_TAKEHOME WHERE CATEGORY_2 IS NULL
+UNION ALL
+SELECT 'BARCODE', COUNT(*) FROM USER_TAKEHOME WHERE BARCODE IS NULL;
+
+-- Check for duplicate barcodes
+SELECT BARCODE, COUNT(*) AS Count FROM USER_TAKEHOME GROUP BY BARCODE HAVING COUNT(*) > 1;
+
+-- 2. Closed-ended SQL Queries
+-- (a) Top 5 brands by receipts scanned for users 21 and over
+SELECT BRAND, COUNT(*) AS ReceiptsScanned
+FROM USER_TAKEHOME
+WHERE USER_AGE >= 21
+GROUP BY BRAND
+ORDER BY ReceiptsScanned DESC
+LIMIT 5;
+
+-- (b) Top 5 brands by sales for users with accounts 6+ months old
+SELECT BRAND, SUM(SALES_AMOUNT) AS TotalSales
+FROM USER_TAKEHOME
+WHERE USER_ACCOUNT_AGE >= 6
+GROUP BY BRAND
+ORDER BY TotalSales DESC
+LIMIT 5;
+
+-- (c) Percentage of sales in Health & Wellness by generation
+SELECT GENERATION, 
+       SUM(CASE WHEN CATEGORY_1 = 'Health & Wellness' THEN SALES_AMOUNT ELSE 0 END) * 100.0 / SUM(SALES_AMOUNT) AS HealthWellnessSalesPercentage
+FROM USER_TAKEHOME
+GROUP BY GENERATION;
+
+-- 3. Open-ended SQL Queries
+-- (a) Identifying power users (users who scan the most receipts)
+SELECT USER_ID, COUNT(*) AS ReceiptCount
+FROM USER_TAKEHOME
+GROUP BY USER_ID
+ORDER BY ReceiptCount DESC
+LIMIT 10;
+
+-- (b) Leading brand in the Dips & Salsa category
+SELECT BRAND, COUNT(*) AS Count
+FROM PRODUCTS_TAKEHOME
+WHERE CATEGORY_2 = 'Dips & Salsa'
+GROUP BY BRAND
+ORDER BY Count DESC
+LIMIT 1;
+
+-- (c) Year-over-year growth percentage
+SELECT YEAR(RECEIPT_DATE) AS Year, 
+       SUM(SALES_AMOUNT) AS TotalSales, 
+       (SUM(SALES_AMOUNT) - LAG(SUM(SALES_AMOUNT)) OVER (ORDER BY YEAR(RECEIPT_DATE))) * 100.0 / LAG(SUM(SALES_AMOUNT)) OVER (ORDER BY YEAR(RECEIPT_DATE)) AS YoYGrowth
+FROM USER_TAKEHOME
+GROUP BY YEAR(RECEIPT_DATE)
+ORDER BY Year;
